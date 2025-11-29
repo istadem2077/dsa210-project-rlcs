@@ -20,12 +20,12 @@ To answer this, I am combining two very different data sources.
 
 ### Part A: The Gameplay (Base Data)
 I am using a [massive dataset](https://www.kaggle.com/datasets/dster/rocket-league-rlcs-timeseries) of Rocket League replays from **Kaggle**. This isn't just a scoreboard; it contains frame-by-frame telemetry.
-* **What I need from it:** The 3D coordinates ($x, y, z$) of every player, updated multiple times per second.
-* **The scale:** Roughly 3,000 matches.
+* **Info retrieved:** The 3D coordinates ($x, y, z$) of every player, updated multiple times per second.
+* **Granularity:** Roughly 3,000 matches.
 
 ### Part B: The Context (Enrichment)
 The Kaggle data gives me the *moves*, but it doesn't tell me *who* is good. For that, I built a scraper for **Liquipedia**, the main wiki for Rocket League e-sports.
-* **What I collected:** The official RLCS ranking points for teams across all major regions (EU, NA, SAM, etc.).
+* **Info retrived:** The official RLCS ranking points for teams across all major regions (EU, NA, SAM, etc.).
 * **Why:** This allows me to tag a match as "High Level" (Pro) vs. "Standard" based on whether the team appears in the global rankings.
 
 ## 3. The Process
@@ -54,6 +54,9 @@ My main hypothesis is simple:
 
 I am testing this using an **Independent Two-Sample T-Test** ($p < 0.05$).
 
+The plot is shown below:
+![spacing hypothesis plot](plots/spacing_hypothesis.png)
+
 I am also running a secondary check to see if **Ranked (Pro)** teams generally maintain wider spacing than **Unranked** teams, regardless of the match outcome.
 
 ## 5. How to Run
@@ -68,4 +71,4 @@ I am also running a secondary check to see if **Ranked (Pro)** teams generally m
 3.  **Run Analysis:**
     Ensure you have `frames.parquet` and `games.parquet` in the folder, then run `2_analysis.ipynb`. The output of the data is already there, but you can run it yourself as well.
 4.  **View Results:**
-    Check the console for the P-Value and the `plots/` folder for the visualizations.
+    Check the cell outputs for the P-Value/T-statistics and the `plots/` folder for the visualizations.
