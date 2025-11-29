@@ -1,7 +1,7 @@
 # DSA 210 Project: Rocket League Positioning Analysis
 
 * **Course:** DSA 210 Introduction to Data Science
-* **Student:** [Your Name]
+* **Student:** Ismayil Taghi-Zada
 * **Term:** Fall 2025
 
 ---
