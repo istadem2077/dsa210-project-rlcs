@@ -1,44 +1,71 @@
-# DSA 210: Introduction to Data Science - Project Proposal
+# DSA 210 Project: Rocket League Positioning Analysis
+
+* **Course:** DSA 210 Introduction to Data Science
+* **Student:** [Your Name]
+* **Term:** Fall 2025
+
 ---
 
-## 1. Motivation (Project Proposal)
+## 1. The Idea (Motivation)
 
-This project aims to build a machine learning model to predict the winner of a professional Rocket League (RLCS) match.
+In professional Rocket League, everyone has good mechanics. You can hit the ball, you can fly, and you can dribble. What separates the winners from the losers often isn't *what* they do with the ball, but *where* they are on the field.
 
-The central research question is: **Does enriching a model with human-generated "power rankings" lead to a statistically significant improvement in predictive accuracy compared to a model trained *only* on raw, in-game performance statistics?**
+A classic mistake in lower-ranked lobbies is "double committing"—where two teammates rush for the ball at the same time, crash into each other, and leave the net wide open. 
 
-This project will compare two models to answer this question:
+**My project investigates this specific behavior.** I want to see if we can mathematically prove that "spacing out" (maintaining a wider average distance between teammates) actually leads to more wins. By connecting raw gameplay data with professional ranking data, I also want to see if the "Pros" essentially play a different game than the amateurs when it comes to positioning.
 
-* **Model A (Baseline):** Trained only on in-game stats (boost, shots, saves, etc.).
-* **Model B (Enriched):** Trained on in-game stats *plus* the team's official regional ranking from Liquipedia.
+## 2. The Data
 
-The findings will help determine which features (raw performance or expert consensus) are more predictive of success in e-sports.
+To answer this, I am combining two very different data sources.
 
-## 2. Data Sources
+### Part A: The Gameplay (Base Data)
+I am using a [massive dataset](https://www.kaggle.com/datasets/dster/rocket-league-rlcs-timeseries) of Rocket League replays from **Kaggle**. This isn't just a scoreboard; it contains frame-by-frame telemetry.
+* **What I need from it:** The 3D coordinates ($x, y, z$) of every player, updated multiple times per second.
+* **The scale:** Roughly 3,000 matches.
 
-This project will use two distinct, publicly available datasets as required by the course guidelines.
+### Part B: The Context (Enrichment)
+The Kaggle data gives me the *moves*, but it doesn't tell me *who* is good. For that, I built a scraper for **Liquipedia**, the main wiki for Rocket League e-sports.
+* **What I collected:** The official RLCS ranking points for teams across all major regions (EU, NA, SAM, etc.).
+* **Why:** This allows me to tag a match as "High Level" (Pro) vs. "Standard" based on whether the team appears in the global rankings.
 
-### Base Data: In-Game Match Statistics
+## 3. The Process
 
-* **Source:** `ballchasing.com` API
-* **Description:** I will collect granular, match-level replay data for recent RLCS tournaments. Key metrics will include boost usage (BPM), positioning (time spent in offensive/defensive thirds), shots, saves, assists, and demolition counts for each team.
+This analysis is broken down into three main scripts.
 
-### Enrichment Data: E-Sports Rankings
+### 1. Scraping the Rankings (`1_collect_data.ipynb`)
+Since Liquipedia separates rankings by region and uses complex tabbed tables, I wrote a custom scraper using `BeautifulSoup`. It iterates through 7 different regions, parses the HTML tables, and extracts the highest point total for every team found. This gives me a "Global Leaderboard" CSV.
 
-* **Source:** Liquipedia Rocket League Wiki (e.g., RLCS Rankings pages)
-* **Description:** I will collect the official team rankings and point standings for the corresponding tournaments. This data represents the "human expert" or "public consensus" ranking of a team's strength going into a match.
+### 2. Feature Engineering: "The Spacing Metric"
+For the gameplay analysis, I needed to turn raw coordinates into a single number that represents "teamwork." I defined **Team Spacing** as the average distance between every pair of teammates on the field.
 
-## 3. Data Collection and Analysis Plan
+For a standard 3-player team ($p_1, p_2, p_3$), the math looks like this:
 
-The entire project will be conducted in **Python 3**.
+$$\text{Avg Spacing} = \frac{\text{dist}(p_1, p_2) + \text{dist}(p_2, p_3) + \text{dist}(p_1, p_3)}{3}$$
 
-**Data Collection:**
-    * **`ballchasing.com` API:** I will use the Python `requests` library to query the API for replay group data from specific RLCS events. The JSON responses will be parsed and loaded into a `pandas` DataFrame.
-    * **Liquipedia Scraping:** I will use the `pandas.read_html()` function to directly scrape the ranking tables from the relevant Liquipedia tournament pages. If this fails due to dynamic JavaScript content, I will use `selenium` as a fallback.
-    * **Data Merging:** The two datasets will be cleaned and merged on team name and date to create a final, unified feature set for each match.
-## 4. Initial `requirements.txt`
+I calculate this for every frame of the match and then average it to get a single "Spacing Score" for that team for that game.
 
-This file will be included in the repository to ensure reproducibility:
-```
-pandas numpy requests scikit-learn lxml selenium jupyterlab matplotlib seaborn
-```
+### 3. Merging & Analysis (`2_analysis.ipynb`)
+Finally, I merge the two datasets. I use **Fuzzy String Matching** (`thefuzz`) to link the team names from the replay files (which might be "G2 Stride") to the Liquipedia rankings (which might be "G2 Esports").
+
+## 4. Hypothesis
+
+My main hypothesis is simple:
+> **"Winning teams will have a statistically significantly higher average spacing value than losing teams."**
+
+I am testing this using an **Independent Two-Sample T-Test** ($p < 0.05$).
+
+I am also running a secondary check to see if **Ranked (Pro)** teams generally maintain wider spacing than **Unranked** teams, regardless of the match outcome.
+
+## 5. How to Run
+
+1.  **Install Dependencies:**
+    ```bash
+    pip install pandas numpy scipy matplotlib seaborn pyarrow fastparquet beautifulsoup4 requests thefuzz python-Levenshtein
+    ```
+2.  **Collect the data:**
+    Run all the cells in `1_collect_data.ipynb`, this will download the Kaggle dataset and move the main used parquet
+    file to the root. Then it will scrape all the necessary data from Liquipedia.
+3.  **Run Analysis:**
+    Ensure you have `frames.parquet` and `games.parquet` in the folder, then run `2_analysis.ipynb`. The output of the data is already there, but you can run it yourself as well.
+4.  **View Results:**
+    Check the console for the P-Value and the `plots/` folder for the visualizations.
