@@ -9,7 +9,7 @@ __pycache__/
 frames.parquet
 games.parquet
 *.json
-*.csv
+# *.csv
 rocket-league-rlcs-timeseries/
 *.html
 # Distribution / packaging
