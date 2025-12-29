@@ -58,17 +58,58 @@ The plot is shown below:
 ![spacing hypothesis plot](plots/spacing_hypothesis.png)
 
 I am also running a secondary check to see if **Ranked (Pro)** teams generally maintain wider spacing than **Unranked** teams, regardless of the match outcome.
+## 5. Machine Learning Results
 
-## 5. How to Run
+While the T-Test proved a relationship exists, I used Machine Learning to see if we could *predict* outcomes or *discover* specific playstyles.
+
+### A. Supervised Learning (Prediction)
+We attempted to predict match outcomes (Win/Loss) using two different models to check if the relationship was linear or non-linear.
+
+#### 1. Logistic Regression (Baseline)
+First, we applied a Logistic Regression model to establish a baseline.
+* **Accuracy:** 51.42%
+* **Precision/Recall:** ~0.51 for both classes.
+* **Result:** The model performed only slightly better than a random coin flip. The high overlap in spacing distributions between winners and losers makes it difficult for a linear model to draw a decision boundary.
+
+#### 2. Random Forest (Non-Linear)
+We then tested a Random Forest Classifier to capture potential non-linear relationships (e.g., "is too much spacing bad?").
+* **Accuracy:** ~50%
+* **Conclusion:** Even the advanced model failed to predict single-game outcomes significantly better than chance.
+
+**Why did prediction fail?**
+Rocket League is a game of moments. A team can maintain perfect spacing for 4 minutes (high average) but make **one** fatal "double commit" error in overtime. The *game-average* metric washes out these specific fatal errors, making "Average Spacing" a weak predictor for specific match wins.
+
+![Confusion Matrix](plots/confusion_matrix.png)
+
+*Figure: The confusion matrix shows the model struggles to distinguish classes, predicting "Win" and "Loss" at nearly equal rates regardless of the truth.*
+
+![Feature Importance](plots/feature_importance.png)
+
+*Figure: Feature importance analysis confirms that while spacing variables are used, they lack the predictive power to overcome the noise of the game.*
+
+### B. Unsupervised Learning (The Discovery)
+Since prediction was noisy, I applied **K-Means Clustering** to find "Team Archetypes." The algorithm discovered three distinct playstyles based on their positioning data:
+
+| Cluster | Archetype Name | Avg Spacing | Risk (Min Dist) | Win Rate | Verdict |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **0** | **"The Turtle"** | Low (709) | Safe (134) | **46.4%** | **Losing Strategy.** Playing too compact surrenders field control. |
+| **1** | **"The Structure"** | **High (779)** | **Safest (205)** | **51.3%** | **Solid.** Wide, disciplined rotation minimizes collision risk. |
+| **2** | **"The Aggressor"** | High (751) | Risky (115) | **52.4%** | **Meta Strategy.** High field coverage combined with aggressive close-range plays. |
+
+**Final Conclusion:**
+My analysis proves that **Style Matters.** Teams in "Cluster 0" (Compact/Defensive) lose significantly more often. The most successful teams (Cluster 2) manage a difficult balance: they maintain high average spacing but are willing to take risks (low minimum distance) to make aggressive plays.
+
+![Clusters Plot](plots/kmeans_clusters.png)
+
+## 6. How to Run
 
 1.  **Install Dependencies:**
     ```bash
-    pip install pandas numpy scipy matplotlib seaborn pyarrow fastparquet beautifulsoup4 requests thefuzz python-Levenshtein
+    pip install pandas numpy scipy matplotlib seaborn pyarrow fastparquet beautifulsoup4 requests thefuzz python-Levenshtein scikit-learn
     ```
 2.  **Collect the data:**
-    Run all the cells in `1_collect_data.ipynb`, this will download the Kaggle dataset and move the main used parquet
-    file to the root. Then it will scrape all the necessary data from Liquipedia.
+    Run `1_collect_data.ipynb`. This downloads the Kaggle dataset and scrapes Liquipedia rankings.
 3.  **Run Analysis:**
-    Ensure you have `frames.parquet` and `games.parquet` in the folder, then run `2_analysis.ipynb`. The output of the data is already there, but you can run it yourself as well.
-4.  **View Results:**
-    Check the cell outputs for the P-Value/T-statistics and the `plots/` folder for the visualizations.
+    Run `2_analysis.ipynb`. This performs the T-Tests and generates the spacing distributions.
+4.  **Run Machine Learning:**
+    Run `3_machine_learning.ipynb`. This performs the Random Forest prediction and K-Means Clustering to generate the "Archetypes" analysis.
